@@ -168,53 +168,62 @@ def naive_bayes_classify(info, sentence):
 
         sentiment += 1
 
-    return sentiment_decision, max_log_probability
-
-    '''
-
-        //calculates the log probability for each sentiment P(sentiment | sentence) which is
-        //proportional to the sum from i = 1 to n P(word at i | sentiment) + P(sentiment)
-        for (int sentiment = 0 ; sentiment < CLASSES ; sentiment++) {
-
-            //The word counts for this sentiment
-            Map<String, Integer> wordCounts = info.wordCounts.get(sentiment);
-
-            //the total number of words in this sentiment
-            double sentimentWords = sentimentWords(wordCounts);
-
-            //initializes the lob probability to the probability of the sentiment P(sentiment),
-            //which is defined by (# of sentences with sentiment / # of sentences)
-            double logProbability = Math.log(info.sentimentCounts[sentiment]) - Math.log(sentences(info.sentimentCounts));
-
-            //calculates P(word | sentiment) for all words in the sentence, and adds them to logProb
-            for (String s : sentence.split(" ")) {
-                s = s.toLowerCase();
-                //the number of times word 's' appears for the sentiment
-                Integer wordCount = wordCounts.get(s);
-                if (wordCount == null || sentimentWords == 0) {
-                    logProbability += Math.log(OUT_OF_VOCAB_PROB);
-                } else {
-                    //Adds P(word | sentiment) = wordCount / # of sentiment words, to log probability
-                    logProbability += Math.log(wordCount) - Math.log(sentimentWords);
-                }
-            }
-
-            //updates maxLogProbability if the logProbability for the current sentiment is greater
-            if (logProbability > maxLogProbability) {
-                sentimentDecision = sentiment;
-                maxLogProbability = logProbability;
-            }
-        }
-
-        return new Classification(sentimentDecision, maxLogProbability);
-        '''
     #return 0, 0 # best class, log probability
+    return sentiment_decision, max_log_probability
     
 # markov_model_classify:  like naive Bayes, but now use a bigram model.  First word
 # still uses unigram count & probability.
 def markov_model_classify(info, sentence):
-    # TODO
-    return 0, 0 # best class, log probability
+    sentiment_decision = 0
+    max_log_probability = -float("inf")
+
+    sentiment = 0
+    while (sentiment < CLASSES):
+        word_counts = info.word_counts.__getitem__(sentiment)
+
+        bigram_counts = info.bigram_counts.__getitem__(sentiment)
+
+        bigram_denoms_counts = info.bigram_denoms.__getitem__(sentiment)
+
+        log_probability = math.log(info.sentiment_counts[sentiment]) - math.log(count_sentences(info.sentiment_counts))
+
+        words = sentence.split(" ")
+
+        i = 0
+        while i <= words.__len__() - 1:
+            s = words[i].lower()
+            if i == 0:
+                try:
+                    word_count = word_counts.__getitem__(s)
+                    sentiment_words = count_sentiment_words(word_counts)
+                except:
+                    word_count = None
+                    sentiment_words = 0
+                if word_count == None or sentiment_words == 0:
+                    log_probability += math.log(OUT_OF_VOCAB_PROB)
+                else:
+                    log_probability += math.log(word_count) - math.log(sentiment_words)
+            else:
+                try:
+                    previous_word = words[i-1].lower()
+                    bigram = previous_word + " " + s
+                    bigram_count = bigram_counts.__getitem__(bigram)
+                    bigram_denmons_count = bigram_denoms_counts.__getitem__(previous_word)
+                except:
+                    bigram_count = None
+                    bigram_denmons_count = None
+
+                if bigram_count == None or bigram_denmons_count == None:
+                    log_probability += math.log(OUT_OF_VOCAB_PROB)
+                else:
+                    log_probability += math.log(bigram_count) - math.log(bigram_denmons_count)
+            i += 1          
+        if (log_probability > max_log_probability):
+            sentiment_decision = sentiment
+            max_log_probability = log_probability
+
+        sentiment += 1
+    return sentiment_decision, max_log_probability
 
 def count_sentiment_words(counts):
     count = 0
